@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seleknyyy Store - تسوق بأمان وثقة</title>
+    <!-- Bootstrap RTL -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Firebase SDK (بالإصدارات المتوافقة) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #f59e0b;
+            --success: #10b981;
+        }
+        body {
+            background: #f8fafc;
+            font-family: 'Tajawal', sans-serif;
+        }
+        .navbar {
+            background: white;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            padding: 1rem 0;
+        }
+        .logo {
+            font-size: 2.2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }
+        .hero-section {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            color: white;
+            padding: 4rem 0;
+            border-radius: 0 0 2rem 2rem;
+            margin-bottom: 3rem;
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            text-align: center;
+        }
+        .category-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border: 2px solid transparent;
+        }
+        .category-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+        }
+        .category-card.active {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+        .category-icon {
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+        .product-card {
+            background: white;
+            border-radius: 1rem;
+            overflow: hidden;
+            transition: 0.3s;
+            height: 100%;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+        }
+        .product-image {
+            height: 220px;
+            overflow: hidden;
+            background: #f1f5f9;
+        }
+        .product-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .product-price {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        .btn-order {
+            background: linear-gradient(135deg, var(--success), #059669);
+            color: white;
+            border: none;
+            border-radius: 2rem;
+            padding: 0.6rem 1.2rem;
+            font-weight: 600;
+            transition: 0.3s;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .btn-order:hover {
+            transform: scale(1.03);
+            box-shadow: 0 10px 20px rgba(16,185,129,0.3);
+            color: white;
+        }
+        .search-box {
+            background: white;
+            border-radius: 2rem;
+            padding: 0.4rem 1rem;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            width: 280px;
+        }
+        .search-box input {
+            border: none;
+            outline: none;
+            width: 100%;
+            padding: 0.3rem;
+        }
+        .search-box button {
+            background: none;
+            border: none;
+            color: var(--primary);
+        }
+        .footer {
+            background: white;
+            padding: 2rem 0;
+            margin-top: 4rem;
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body>
+    <!-- شريط التنقل -->
+    <nav class="navbar">
+        <div class="container">
+            <a class="logo" href="index.html">Seleknyyy Store</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav mx-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="index.html">الرئيسية</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showAllProducts()">المنتجات</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="scrollToCategories()">الأقسام</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="contactUs()">اتصل بنا</a>
+                    </li>
+                </ul>
+                <div class="d-flex align-items-center">
+                    <div class="search-box">
+                        <input type="text" id="searchInput" placeholder="ابحث عن منتج..." onkeyup="searchProducts()">
+                        <button onclick="searchProducts()"><i class="fas fa-search"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- قسم البطل -->
+    <section class="hero-section">
+        <div class="container text-center">
+            <h1 class="display-4 fw-bold mb-3">🛍️ تسوق بأمان وثقة</h1>
+            <p class="lead mb-4">أفضل المنتجات الأصلية مع خدمة توصيل سريعة وآمنة</p>
+            <div class="row g-3 justify-content-center">
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="display-5 fw-bold" id="productsCount">0</div>
+                        <div>منتج</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="display-5 fw-bold">5000+</div>
+                        <div>عميل</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="display-5 fw-bold">4.9</div>
+                        <div>تقييم</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- الأقسام -->
+    <section class="container my-5" id="categoriesSection">
+        <h2 class="text-center mb-4">تصفح الأقسام</h2>
+        <p class="text-center text-muted mb-4">اختر من بين مئات المنتجات</p>
+        <div class="row g-3" id="categories"></div>
+    </section>
+
+    <!-- المنتجات -->
+    <section class="container my-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="mb-0" id="productsTitle">🔥 جميع المنتجات</h2>
+            <button class="btn btn-outline-primary rounded-pill px-4" onclick="showAllProducts()">عرض الكل</button>
+        </div>
+        <div class="row g-4" id="productsContainer">
+            <div class="col-12 text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- تذييل -->
+    <footer class="footer">
+        <div class="container text-center">
+            <p class="mb-0">جميع الحقوق محفوظة &copy; 2025 Seleknyyy Store</p>
+        </div>
+    </footer>
+
+    <script>
+        // ✅ إعدادات Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCjOIN_PDKqTqyd5KLIHtOt9Mofjtu-zas",
+            authDomain: "seleknyyy-store.firebaseapp.com",
+            projectId: "seleknyyy-store",
+            storageBucket: "seleknyyy-store.firebasestorage.app",
+            messagingSenderId: "532685887859",
+            appId: "1:532685887859:web:8b4fd6141504c91f808d06"
+        };
+
+        // تهيئة Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+
+        let currentCategory = null;
+        let allProducts = [];
+
+        // تحميل الأقسام
+        function loadCategories() {
+            const categories = ['ملابس', 'أحذية', 'إلكترونيات', 'حقائب', 'إكسسوارات', 'تجميل'];
+            const icons = ['fa-tshirt', 'fa-shoe-prints', 'fa-mobile-alt', 'fa-bag-shopping', 'fa-clock', 'fa-spa'];
+            const container = document.getElementById('categories');
+            container.innerHTML = '';
+            categories.forEach((cat, index) => {
+                container.innerHTML += `
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <div class="category-card ${currentCategory === cat ? 'active' : ''}" onclick="filterByCategory('${cat}')">
+                            <i class="fas ${icons[index]} category-icon"></i>
+                            <h6>${cat}</h6>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function scrollToCategories() {
+            document.getElementById('categoriesSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function contactUs() {
+            Swal.fire({
+                title: 'اتصل بنا',
+                html: `
+                    <div class="text-center">
+                        <p><i class="fas fa-phone text-primary"></i> 0555 12 34 56</p>
+                        <p><i class="fas fa-envelope text-primary"></i> contact@seleknyyy.dz</p>
+                    </div>
+                `,
+                icon: 'info',
+                confirmButtonText: 'حسناً'
+            });
+        }
+
+        function searchProducts() {
+            const term = document.getElementById('searchInput').value.toLowerCase();
+            if (!term) {
+                loadProducts(currentCategory);
+                return;
+            }
+            const filtered = allProducts.filter(p => 
+                p.name.toLowerCase().includes(term) || 
+                (p.category && p.category.toLowerCase().includes(term))
+            );
+            displayProducts(filtered);
+        }
+
+        function filterByCategory(category) {
+            currentCategory = category;
+            loadCategories();
+            document.getElementById('productsTitle').textContent = `📁 ${category}`;
+            loadProducts(category);
+        }
+
+        function showAllProducts() {
+            currentCategory = null;
+            loadCategories();
+            document.getElementById('productsTitle').textContent = '🔥 جميع المنتجات';
+            loadProducts();
+        }
+
+        function loadProducts(categoryFilter = null) {
+            const container = document.getElementById('productsContainer');
+            container.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>';
+
+            let query = db.collection("products");
+            if (categoryFilter) query = query.where("category", "==", categoryFilter);
+
+            query.get().then((snapshot) => {
+                allProducts = [];
+                snapshot.forEach(doc => allProducts.push({ id: doc.id, ...doc.data() }));
+                displayProducts(allProducts);
+                document.getElementById('productsCount').textContent = allProducts.length;
+            }).catch(error => {
+                console.error(error);
+                container.innerHTML = '<div class="col-12 text-center text-danger">حدث خطأ</div>';
+            });
+        }
+
+        function displayProducts(products) {
+            const container = document.getElementById('productsContainer');
+            container.innerHTML = '';
+
+            if (products.length === 0) {
+                container.innerHTML = '<div class="col-12 text-center py-4">لا توجد منتجات</div>';
+                return;
+            }
+
+            products.forEach(product => {
+                const imageUrl = product.imageUrl || 'https://via.placeholder.com/300x200?text=لا+توجد+صورة';
+                
+                container.innerHTML += `
+                    <div class="col-md-6 col-lg-3">
+                        <div class="product-card">
+                            <div class="product-image">
+                                <img src="${imageUrl}" alt="${product.name}">
+                            </div>
+                            <div class="p-3">
+                                <span class="badge bg-secondary mb-2">${product.category || 'عام'}</span>
+                                <h5>${product.name}</h5>
+                                <p class="product-price">${product.price} د.ج</p>
+                                <button class="btn-order" onclick="openOrderForm('${product.id}', '${product.name}', ${product.price})">
+                                    <i class="fas fa-shopping-bag"></i> اطلب الآن
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function openOrderForm(productId, productName, productPrice) {
+            Swal.fire({
+                title: '📝 طلب جديد',
+                html: `
+                    <input type="text" id="customerName" class="form-control mb-2" placeholder="الاسم الكامل">
+                    <input type="tel" id="customerPhone" class="form-control mb-2" placeholder="رقم الهاتف">
+                    <textarea id="customerAddress" class="form-control" placeholder="العنوان" rows="2"></textarea>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'تأكيد',
+                cancelButtonText: 'إلغاء',
+                preConfirm: () => {
+                    const name = document.getElementById('customerName').value;
+                    const phone = document.getElementById('customerPhone').value;
+                    const address = document.getElementById('customerAddress').value;
+                    if (!name || !phone || !address) {
+                        Swal.showValidationMessage('يرجى ملء جميع الحقول');
+                        return false;
+                    }
+                    return { name, phone, address };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    saveOrder(productId, productName, productPrice, result.value);
+                }
+            });
+        }
+
+        function saveOrder(productId, productName, productPrice, customer) {
+            const orderData = {
+                productId, productName, productPrice,
+                customerName: customer.name,
+                customerPhone: customer.phone,
+                customerAddress: customer.address,
+                status: 'جديد',
+                orderDate: new Date().toISOString(),
+                orderNumber: 'ORD-' + Date.now().toString().slice(-6)
+            };
+
+            db.collection("orders").add(orderData).then(() => {
+                Swal.fire('✅ تم', 'تم استلام طلبك بنجاح', 'success');
+            }).catch(error => {
+                Swal.fire('خطأ', 'حدث خطأ، حاول مرة أخرى', 'error');
+            });
+        }
+
+        window.onload = () => {
+            loadCategories();
+            loadProducts();
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
