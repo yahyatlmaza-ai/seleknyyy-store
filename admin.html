@@ -1,0 +1,1673 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seleknyyy Dashboard | لوحة التحكم</title>
+    
+    <!-- Bootstrap RTL -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+    
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts - Tajawal -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    
+    <style>
+        /* ========== المتغيرات ========== */
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --primary-light: #60a5fa;
+            --secondary: #f59e0b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f97316;
+            --info: #3b82f6;
+            --dark: #0f172a;
+            --light: #f8fafc;
+            --gray: #64748b;
+            --gradient-primary: linear-gradient(135deg, #2563eb, #7c3aed);
+            --gradient-success: linear-gradient(135deg, #10b981, #059669);
+            --gradient-danger: linear-gradient(135deg, #ef4444, #dc2626);
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.07);
+            --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+            --shadow-xl: 0 20px 25px rgba(0,0,0,0.15);
+        }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: #f1f5f9;
+            color: var(--dark);
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        /* ========== تخطيط الصفحة ========== */
+        .dashboard-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* ========== الشريط الجانبي ========== */
+        .sidebar {
+            width: 280px;
+            background: white;
+            box-shadow: 2px 0 20px rgba(0,0,0,0.05);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            right: 0;
+            top: 0;
+            z-index: 1000;
+            transition: all 0.3s;
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: center;
+        }
+
+        .sidebar-logo {
+            font-size: 2rem;
+            font-weight: 900;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+            display: block;
+        }
+
+        .sidebar-user {
+            padding: 1.5rem;
+            background: #f8fafc;
+            margin: 1rem;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .user-avatar {
+            width: 60px;
+            height: 60px;
+            background: var(--gradient-primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .sidebar-nav {
+            padding: 1rem;
+        }
+
+        .nav-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.8rem 1rem;
+            color: var(--dark);
+            text-decoration: none;
+            border-radius: 10px;
+            transition: all 0.3s;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .nav-link i {
+            width: 24px;
+            margin-left: 10px;
+            font-size: 1.1rem;
+        }
+
+        .nav-link:hover {
+            background: #f1f5f9;
+            color: var(--primary);
+        }
+
+        .nav-link.active {
+            background: var(--gradient-primary);
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .nav-badge {
+            margin-right: auto;
+            background: var(--danger);
+            color: white;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        /* ========== المحتوى الرئيسي ========== */
+        .main-content {
+            flex: 1;
+            margin-right: 280px;
+            padding: 2rem;
+            min-height: 100vh;
+            background: #f1f5f9;
+        }
+
+        /* ========== الشريط العلوي ========== */
+        .top-bar {
+            background: white;
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0;
+            color: var(--dark);
+        }
+
+        .menu-toggle {
+            display: none;
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        /* ========== بطاقات الإحصائيات ========== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-primary);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            background: #eff6ff;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 0.2rem;
+            color: var(--dark);
+        }
+
+        .stat-label {
+            color: var(--gray);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        /* ========== أقسام المحتوى ========== */
+        .content-section {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-md);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin: 0;
+            color: var(--dark);
+        }
+
+        /* ========== الجداول ========== */
+        .table-responsive {
+            overflow-x: auto;
+            border-radius: 12px;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        .table th {
+            background: #f8fafc;
+            padding: 1rem;
+            font-weight: 600;
+            color: var(--gray);
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .table td {
+            padding: 1rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .badge {
+            padding: 0.4rem 1rem;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .badge-warning {
+            background: #fed7aa;
+            color: #92400e;
+        }
+
+        .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* ========== الأزرار ========== */
+        .btn-primary {
+            background: var(--gradient-primary);
+            border: none;
+            color: white;
+            padding: 0.6rem 1.5rem;
+            border-radius: 30px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            font-size: 0.95rem;
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-success {
+            background: var(--gradient-success);
+            border: none;
+            color: white;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+        }
+
+        .btn-success:hover {
+            transform: scale(1.05);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-danger {
+            background: var(--gradient-danger);
+            border: none;
+            color: white;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+        }
+
+        .btn-danger:hover {
+            transform: scale(1.05);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-sm {
+            padding: 0.3rem 0.8rem;
+            font-size: 0.85rem;
+            margin: 0 0.2rem;
+        }
+
+        /* ========== النماذج ========== */
+        .form-control, .form-select {
+            width: 100%;
+            padding: 0.7rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            transition: all 0.3s;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 0.95rem;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(37,99,235,0.1);
+            outline: none;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .image-preview {
+            width: 100px;
+            height: 100px;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid #e2e8f0;
+            margin-top: 0.5rem;
+            background: #f8fafc;
+        }
+
+        .image-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* ========== شركات التوصيل ========== */
+        .shipping-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .shipping-card {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .shipping-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .shipping-card.active {
+            border-color: var(--primary);
+            background: #eff6ff;
+            box-shadow: var(--shadow-md);
+        }
+
+        .shipping-card.active::before {
+            content: '\f00c';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: var(--success);
+            font-size: 1.2rem;
+        }
+
+        .shipping-logo {
+            width: 60px;
+            height: 60px;
+            background: white;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .shipping-name {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.3rem;
+            color: var(--dark);
+        }
+
+        .shipping-desc {
+            font-size: 0.85rem;
+            color: var(--gray);
+            margin-bottom: 0.5rem;
+        }
+
+        .shipping-status {
+            display: inline-block;
+            padding: 0.2rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .shipping-status.active {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .shipping-status.inactive {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* ========== نموذج إعدادات الشحن ========== */
+        .shipping-form {
+            background: #f8fafc;
+            padding: 2rem;
+            border-radius: 16px;
+            margin-top: 2rem;
+            border: 2px solid #e2e8f0;
+        }
+
+        .shipping-form-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .field-note {
+            font-size: 0.8rem;
+            color: var(--gray);
+            margin-top: 0.2rem;
+        }
+
+        .required-field::after {
+            content: ' *';
+            color: var(--danger);
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ========== مؤشر التحميل ========== */
+        .loader {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #e2e8f0;
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* ========== التجاوب مع الجوال ========== */
+        @media (max-width: 1200px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .shipping-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 992px) {
+            .sidebar {
+                right: -280px;
+            }
+            .sidebar.show {
+                right: 0;
+            }
+            .main-content {
+                margin-right: 0;
+            }
+            .menu-toggle {
+                display: block;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .shipping-grid {
+                grid-template-columns: 1fr;
+            }
+            .content-section {
+                padding: 1rem;
+            }
+            .section-header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+        }
+
+        /* ========== الإشعارات ========== */
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: white;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow-xl);
+            border-right: 4px solid var(--success);
+            z-index: 9999;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* ========== بطاقات المنتجات في المعاينة ========== */
+        .product-image-thumb {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .product-image-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body>
+    <!-- الشريط الجانبي -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a href="index.html" class="sidebar-logo">Seleknyyy</a>
+            <p class="text-muted small" style="margin-top: 0.5rem;">لوحة التحكم</p>
+        </div>
+        
+        <div class="sidebar-user">
+            <div class="user-avatar">
+                <i class="fas fa-user"></i>
+            </div>
+            <div style="font-weight: 700; font-size: 1.1rem;">مدير المتجر</div>
+            <div style="color: var(--gray); font-size: 0.85rem;">مدير النظام</div>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <div class="nav-item">
+                <div class="nav-link active" onclick="showSection('dashboard')">
+                    <i class="fas fa-home"></i>
+                    <span>الرئيسية</span>
+                </div>
+            </div>
+            <div class="nav-item">
+                <div class="nav-link" onclick="showSection('products')">
+                    <i class="fas fa-box"></i>
+                    <span>المنتجات</span>
+                    <span class="nav-badge" id="productsBadge">0</span>
+                </div>
+            </div>
+            <div class="nav-item">
+                <div class="nav-link" onclick="showSection('orders')">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>الطلبات</span>
+                    <span class="nav-badge" id="ordersBadge">0</span>
+                </div>
+            </div>
+            <div class="nav-item">
+                <div class="nav-link" onclick="showSection('shipping')">
+                    <i class="fas fa-truck"></i>
+                    <span>شركات التوصيل</span>
+                </div>
+            </div>
+            <div class="nav-item">
+                <div class="nav-link" onclick="showSection('customers')">
+                    <i class="fas fa-users"></i>
+                    <span>العملاء</span>
+                    <span class="nav-badge">5000+</span>
+                </div>
+            </div>
+            <hr style="margin: 1rem 0;">
+            <div class="nav-item">
+                <div class="nav-link text-danger" onclick="previewStore()">
+                    <i class="fas fa-eye"></i>
+                    <span>معاينة المتجر</span>
+                </div>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- المحتوى الرئيسي -->
+    <main class="main-content">
+        <!-- الشريط العلوي -->
+        <div class="top-bar">
+            <h1 class="page-title" id="currentPageTitle">الرئيسية</h1>
+            <button class="menu-toggle" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+
+        <!-- قسم الرئيسية -->
+        <div id="dashboardSection">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <div class="stat-value" id="totalProducts">0</div>
+                    <div class="stat-label">إجمالي المنتجات</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <div class="stat-value" id="newOrders">0</div>
+                    <div class="stat-label">الطلبات الجديدة</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-value">5000+</div>
+                    <div class="stat-label">العملاء المسجلين</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <div class="stat-value">4.9</div>
+                    <div class="stat-label">تقييم المتجر</div>
+                </div>
+            </div>
+
+            <!-- آخر الطلبات -->
+            <div class="content-section">
+                <div class="section-header">
+                    <h5 class="section-title">📋 آخر الطلبات</h5>
+                    <button class="btn-primary" onclick="showSection('orders')">
+                        عرض الكل <i class="fas fa-arrow-left ms-1"></i>
+                    </button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>رقم الطلب</th>
+                                <th>العميل</th>
+                                <th>المنتج</th>
+                                <th>المبلغ</th>
+                                <th>الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentOrders">
+                            <tr>
+                                <td colspan="5" class="text-center">
+                                    <div class="loader" style="margin: 20px auto;"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- قسم المنتجات -->
+        <div id="productsSection" style="display: none;">
+            <div class="content-section">
+                <div class="section-header">
+                    <h5 class="section-title">📦 إدارة المنتجات</h5>
+                    <button class="btn-primary" onclick="showProductForm()">
+                        <i class="fas fa-plus"></i> إضافة منتج جديد
+                    </button>
+                </div>
+
+                <!-- نموذج إضافة/تعديل منتج -->
+                <div id="productFormCard" style="display: none; margin-bottom: 2rem;">
+                    <div class="shipping-form">
+                        <h6 class="shipping-form-title" id="productFormTitle">
+                            <i class="fas fa-plus-circle text-success"></i>
+                            إضافة منتج جديد
+                        </h6>
+                        <input type="hidden" id="productId">
+                        
+                        <div class="form-row">
+                            <div>
+                                <label class="form-label">اسم المنتج</label>
+                                <input type="text" class="form-control" id="productName" placeholder="مثال: تيشيرت قطني">
+                            </div>
+                            <div>
+                                <label class="form-label">السعر (د.ج)</label>
+                                <input type="number" class="form-control" id="productPrice" placeholder="2500">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div>
+                                <label class="form-label">القسم</label>
+                                <select class="form-select" id="productCategory">
+                                    <option value="ملابس">ملابس</option>
+                                    <option value="أحذية">أحذية</option>
+                                    <option value="إلكترونيات">إلكترونيات</option>
+                                    <option value="حقائب">حقائب</option>
+                                    <option value="إكسسوارات">إكسسوارات</option>
+                                    <option value="تجميل">تجميل</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="form-label">صورة المنتج</label>
+                                <input type="file" class="form-control" id="productImage" accept="image/*">
+                            </div>
+                        </div>
+                        
+                        <div id="imagePreview" class="image-preview" style="margin-bottom: 1rem;"></div>
+                        
+                        <div>
+                            <button class="btn-success" onclick="saveProduct()" style="margin-left: 0.5rem;">
+                                <i class="fas fa-save"></i> حفظ
+                            </button>
+                            <button class="btn-danger" onclick="hideProductForm()">
+                                <i class="fas fa-times"></i> إلغاء
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- جدول المنتجات -->
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>الصورة</th>
+                                <th>اسم المنتج</th>
+                                <th>السعر</th>
+                                <th>القسم</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productsTable">
+                            <tr>
+                                <td colspan="5" class="text-center">
+                                    <div class="loader" style="margin: 20px auto;"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- قسم الطلبات -->
+        <div id="ordersSection" style="display: none;">
+            <div class="content-section">
+                <h5 class="section-title">📋 جميع الطلبات</h5>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>رقم الطلب</th>
+                                <th>العميل</th>
+                                <th>المنتج</th>
+                                <th>المبلغ</th>
+                                <th>الحالة</th>
+                                <th>التاريخ</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersTable">
+                            <tr>
+                                <td colspan="7" class="text-center">
+                                    <div class="loader" style="margin: 20px auto;"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- قسم شركات التوصيل (الجزائرية فقط) -->
+        <div id="shippingSection" style="display: none;">
+            <div class="content-section">
+                <h5 class="section-title">🇩🇿 شركات التوصيل الجزائرية</h5>
+                <p class="text-muted mb-4">اختر شركة التوصيل وقم بإعداد مفاتيح API و Token للربط</p>
+                
+                <!-- شبكة شركات التوصيل -->
+                <div class="shipping-grid" id="shippingCompaniesGrid"></div>
+
+                <!-- نموذج إعدادات الشحن (يظهر عند اختيار شركة) -->
+                <div id="shippingSettingsForm" class="shipping-form" style="display: none;">
+                    <h6 class="shipping-form-title" id="shippingFormTitle">
+                        <i class="fas fa-truck text-primary"></i>
+                        <span id="selectedCompanyName">إعدادات شركة التوصيل</span>
+                    </h6>
+                    
+                    <input type="hidden" id="selectedCompanyId">
+                    <input type="hidden" id="requiresAccount" value="true">
+                    
+                    <div class="form-row">
+                        <div>
+                            <label class="form-label required-field">
+                                <i class="fas fa-key"></i> مفتاح API (API Key)
+                            </label>
+                            <input type="text" class="form-control" id="apiKey" 
+                                   placeholder="أدخل مفتاح API الخاص بالشركة">
+                        </div>
+                        <div>
+                            <label class="form-label required-field">
+                                <i class="fas fa-token"></i> رمز المصادقة (Token)
+                            </label>
+                            <input type="text" class="form-control" id="token" 
+                                   placeholder="أدخل رمز المصادقة">
+                        </div>
+                    </div>
+                    
+                    <!-- حقل رقم الحساب - يظهر فقط للشركات التي تحتاجه -->
+                    <div id="accountNumberField" class="form-row">
+                        <div class="col-12">
+                            <label class="form-label" id="accountLabel">
+                                <i class="fas fa-id-card"></i> رقم الحساب
+                            </label>
+                            <input type="text" class="form-control" id="accountNumber" 
+                                   placeholder="رقم الحساب لدى الشركة">
+                            <div class="field-note" id="accountNote">اختياري - بعض الشركات لا تحتاجه</div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div>
+                            <label class="form-label">
+                                <i class="fas fa-code-branch"></i> رمز الفرع (اختياري)
+                            </label>
+                            <input type="text" class="form-control" id="branchCode" 
+                                   placeholder="رمز الفرع إن وجد">
+                        </div>
+                        <div>
+                            <label class="form-label">
+                                <i class="fas fa-toggle-on"></i> حالة الاتصال
+                            </label>
+                            <select class="form-select" id="connectionStatus">
+                                <option value="active">🟢 نشط - جاهز لاستقبال الطلبات</option>
+                                <option value="inactive">🔴 غير نشط - معطل مؤقتاً</option>
+                                <option value="testing">🟡 وضع الاختبار - تجربة الاتصال</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label">
+                            <i class="fas fa-globe"></i> رابط API (اختياري)
+                        </label>
+                        <input type="url" class="form-control" id="apiUrl" 
+                               placeholder="https://api.company.com/v1">
+                    </div>
+                    
+                    <div>
+                        <button class="btn-success" onclick="saveShippingSettings()" style="margin-left: 0.5rem;">
+                            <i class="fas fa-save"></i> حفظ الإعدادات
+                        </button>
+                        <button class="btn-primary" onclick="testConnection()" style="margin-left: 0.5rem;">
+                            <i class="fas fa-plug"></i> اختبار الاتصال
+                        </button>
+                        <button class="btn-danger" onclick="hideShippingForm()">
+                            <i class="fas fa-times"></i> إلغاء
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- قسم العملاء -->
+        <div id="customersSection" style="display: none;">
+            <div class="content-section">
+                <h5 class="section-title">👥 قائمة العملاء</h5>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>الاسم</th>
+                                <th>رقم الهاتف</th>
+                                <th>البريد الإلكتروني</th>
+                                <th>عدد الطلبات</th>
+                                <th>آخر طلب</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1</td>
+                                <td>أحمد محمد</td>
+                                <td>0555 12 34 56</td>
+                                <td>ahmed@email.com</td>
+                                <td>12</td>
+                                <td>2025-02-25</td>
+                            </tr>
+                            <tr>
+                                <td>2</td>
+                                <td>سارة علي</td>
+                                <td>0555 98 76 54</td>
+                                <td>sara@email.com</td>
+                                <td>8</td>
+                                <td>2025-02-24</td>
+                            </tr>
+                            <tr>
+                                <td>3</td>
+                                <td>محمد أمين</td>
+                                <td>0555 55 55 55</td>
+                                <td>amine@email.com</td>
+                                <td>15</td>
+                                <td>2025-02-26</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // ✅ إعدادات Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCjOIN_PDKqTqyd5KLIHtOt9Mofjtu-zas",
+            authDomain: "seleknyyy-store.firebaseapp.com",
+            projectId: "seleknyyy-store",
+            storageBucket: "seleknyyy-store.firebasestorage.app",
+            messagingSenderId: "532685887859",
+            appId: "1:532685887859:web:8b4fd6141504c91f808d06"
+        };
+
+        // تهيئة Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+
+        // ✅ قائمة شركات التوصيل الجزائرية ONLY مع تحديد الحقول المطلوبة
+        const algerianShippingCompanies = [
+            { 
+                id: 'yalidine', 
+                name: 'Yalidine', 
+                icon: 'fa-truck', 
+                desc: 'توصيل سريع لجميع الولايات',
+                website: 'https://www.yalidine.com',
+                api_docs: 'https://developers.yalidine.com',
+                requiresAccount: true, // يحتاج رقم حساب
+                requiresToken: true
+            },
+            { 
+                id: 'maystro', 
+                name: 'Maystro Delivery', 
+                icon: 'fa-shipping-fast', 
+                desc: 'خدمة توصيل احترافية',
+                website: 'https://www.maystro.dz',
+                api_docs: 'https://api.maystro.dz/docs',
+                requiresAccount: true,
+                requiresToken: true
+            },
+            { 
+                id: 'zr-express', 
+                name: 'ZR Express', 
+                icon: 'fa-box-open', 
+                desc: 'متخصصة في التجارة الإلكترونية',
+                website: 'https://www.zrexpress.dz',
+                api_docs: 'https://api.zrexpress.dz',
+                requiresAccount: false, // ❌ لا يحتاج رقم حساب
+                requiresToken: true
+            },
+            { 
+                id: 'algerie-poste', 
+                name: 'Algérie Poste', 
+                icon: 'fa-envelope', 
+                desc: 'البريد الجزائري - تغطية وطنية كاملة',
+                website: 'https://www.poste.dz',
+                api_docs: 'https://dev.poste.dz',
+                requiresAccount: true,
+                requiresToken: true
+            },
+            { 
+                id: 'ems', 
+                name: 'EMS Algérie', 
+                icon: 'fa-globe', 
+                desc: 'البريد السريع الدولي',
+                website: 'https://www.ems.poste.dz',
+                api_docs: 'https://api.ems.dz',
+                requiresAccount: true,
+                requiresToken: true
+            },
+            { 
+                id: 'falcon-express', 
+                name: 'Falcon Express', 
+                icon: 'fa-plane', 
+                desc: 'الممثل الرسمي لـ FedEx في الجزائر',
+                website: 'https://www.falconexpress.dz',
+                api_docs: 'https://api.falconexpress.dz',
+                requiresAccount: true,
+                requiresToken: true
+            },
+            { 
+                id: 'tassili', 
+                name: 'Tassili Express', 
+                icon: 'fa-truck-fast', 
+                desc: 'خدمة توصيل سريعة',
+                website: 'https://www.tassiliexpress.dz',
+                api_docs: 'https://api.tassiliexpress.dz',
+                requiresAccount: true,
+                requiresToken: true
+            },
+            { 
+                id: 'belloula', 
+                name: 'Belloula Express', 
+                icon: 'fa-box', 
+                desc: 'توصيل الطرود والبضائع',
+                website: 'https://www.belloulaexpress.dz',
+                api_docs: 'https://api.belloulaexpress.dz',
+                requiresAccount: true,
+                requiresToken: true
+            }
+        ];
+
+        // ========== المتغيرات العامة ==========
+        let currentSection = 'dashboard';
+        let selectedShippingCompany = null;
+
+        // ========== التحكم في الأقسام ==========
+        function showSection(section) {
+            // إخفاء جميع الأقسام
+            document.getElementById('dashboardSection').style.display = 'none';
+            document.getElementById('productsSection').style.display = 'none';
+            document.getElementById('ordersSection').style.display = 'none';
+            document.getElementById('shippingSection').style.display = 'none';
+            document.getElementById('customersSection').style.display = 'none';
+            
+            // إظهار القسم المطلوب
+            document.getElementById(section + 'Section').style.display = 'block';
+            
+            // تحديث العنوان
+            const titles = {
+                dashboard: 'الرئيسية',
+                products: 'إدارة المنتجات',
+                orders: 'إدارة الطلبات',
+                shipping: 'شركات التوصيل الجزائرية',
+                customers: 'العملاء'
+            };
+            document.getElementById('currentPageTitle').textContent = titles[section];
+            
+            // تحديث الرابط النشط
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            
+            // تحميل البيانات حسب القسم
+            if (section === 'shipping') {
+                loadShippingCompanies();
+            }
+            
+            currentSection = section;
+        }
+
+        // ========== عرض شركات التوصيل ==========
+        function loadShippingCompanies() {
+            const grid = document.getElementById('shippingCompaniesGrid');
+            grid.innerHTML = '';
+            
+            algerianShippingCompanies.forEach(company => {
+                // التحقق من وجود إعدادات محفوظة
+                const savedSettings = localStorage.getItem(`shipping_${company.id}`);
+                let isActive = false;
+                let hasSettings = false;
+                
+                if (savedSettings) {
+                    const settings = JSON.parse(savedSettings);
+                    isActive = settings.status === 'active';
+                    hasSettings = true;
+                }
+                
+                grid.innerHTML += `
+                    <div class="shipping-card" onclick="selectShippingCompany('${company.id}')" id="shipping-${company.id}">
+                        <div class="shipping-logo">
+                            <i class="fas ${company.icon}"></i>
+                        </div>
+                        <div class="shipping-name">${company.name}</div>
+                        <div class="shipping-desc">${company.desc}</div>
+                        <div style="margin-top: 0.5rem;">
+                            <span class="shipping-status ${isActive ? 'active' : 'inactive'}">
+                                ${isActive ? '🟢 مفعل' : '🔴 غير مفعل'}
+                            </span>
+                            ${hasSettings ? '<span class="badge-success" style="margin-right: 0.5rem; padding: 0.2rem 0.5rem;">✔ تم الإعداد</span>' : ''}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // ========== اختيار شركة توصيل ==========
+        function selectShippingCompany(companyId) {
+            // إزالة التحديد من جميع البطاقات
+            document.querySelectorAll('.shipping-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            
+            // تحديد البطاقة المختارة
+            document.getElementById(`shipping-${companyId}`).classList.add('active');
+            
+            // البحث عن بيانات الشركة
+            const company = algerianShippingCompanies.find(c => c.id === companyId);
+            selectedShippingCompany = company;
+            
+            // تحديث واجهة المستخدم حسب متطلبات الشركة
+            updateShippingFormForCompany(company);
+            
+            // تحميل الإعدادات المحفوظة إن وجدت
+            const saved = localStorage.getItem(`shipping_${companyId}`);
+            if (saved) {
+                const settings = JSON.parse(saved);
+                document.getElementById('apiKey').value = settings.apiKey || '';
+                document.getElementById('token').value = settings.token || '';
+                document.getElementById('accountNumber').value = settings.accountNumber || '';
+                document.getElementById('branchCode').value = settings.branchCode || '';
+                document.getElementById('connectionStatus').value = settings.status || 'inactive';
+                document.getElementById('apiUrl').value = settings.apiUrl || company.api_docs || '';
+            } else {
+                // تعبئة الحقول الفارغة
+                document.getElementById('apiKey').value = '';
+                document.getElementById('token').value = '';
+                document.getElementById('accountNumber').value = '';
+                document.getElementById('branchCode').value = '';
+                document.getElementById('connectionStatus').value = 'inactive';
+                document.getElementById('apiUrl').value = company.api_docs || '';
+            }
+            
+            // إظهار النموذج
+            document.getElementById('shippingSettingsForm').style.display = 'block';
+            
+            // تمرير سلس إلى النموذج
+            setTimeout(() => {
+                document.getElementById('shippingSettingsForm').scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+        }
+
+        // ========== تحديث نموذج الشحن حسب متطلبات الشركة ==========
+        function updateShippingFormForCompany(company) {
+            document.getElementById('selectedCompanyName').textContent = `إعدادات ${company.name}`;
+            document.getElementById('selectedCompanyId').value = company.id;
+            
+            const accountField = document.getElementById('accountNumberField');
+            const accountLabel = document.getElementById('accountLabel');
+            const accountNote = document.getElementById('accountNote');
+            const accountInput = document.getElementById('accountNumber');
+            
+            if (company.requiresAccount) {
+                // الشركة تحتاج رقم حساب
+                accountField.style.display = 'block';
+                accountLabel.classList.add('required-field');
+                accountLabel.innerHTML = '<i class="fas fa-id-card"></i> رقم الحساب *';
+                accountNote.textContent = 'مطلوب للربط مع هذه الشركة';
+                accountInput.required = true;
+                accountInput.placeholder = 'أدخل رقم الحساب';
+            } else {
+                // الشركة لا تحتاج رقم حساب (ZR Express)
+                accountField.style.display = 'block';
+                accountLabel.classList.remove('required-field');
+                accountLabel.innerHTML = '<i class="fas fa-id-card"></i> رقم الحساب (اختياري)';
+                accountNote.textContent = 'هذه الشركة لا تتطلب رقم حساب - يمكنك تركه فارغاً';
+                accountInput.required = false;
+                accountInput.placeholder = 'اختياري - اتركه فارغاً';
+            }
+        }
+
+        // ========== إخفاء نموذج الشحن ==========
+        function hideShippingForm() {
+            document.getElementById('shippingSettingsForm').style.display = 'none';
+            selectedShippingCompany = null;
+            
+            // إزالة التحديد من البطاقات
+            document.querySelectorAll('.shipping-card').forEach(card => {
+                card.classList.remove('active');
+            });
+        }
+
+        // ========== حفظ إعدادات الشحن ==========
+        function saveShippingSettings() {
+            const companyId = document.getElementById('selectedCompanyId').value;
+            const company = algerianShippingCompanies.find(c => c.id === companyId);
+            
+            if (!company) {
+                showNotification('الرجاء اختيار شركة توصيل أولاً', 'error');
+                return;
+            }
+            
+            const apiKey = document.getElementById('apiKey').value;
+            const token = document.getElementById('token').value;
+            const accountNumber = document.getElementById('accountNumber').value;
+            const branchCode = document.getElementById('branchCode').value;
+            const status = document.getElementById('connectionStatus').value;
+            const apiUrl = document.getElementById('apiUrl').value;
+            
+            // التحقق من الحقول المطلوبة
+            if (!apiKey || !token) {
+                showNotification('مفتاح API و Token مطلوبان', 'error');
+                return;
+            }
+            
+            // التحقق من رقم الحساب إذا كانت الشركة تحتاجه
+            if (company.requiresAccount && !accountNumber) {
+                showNotification(`رقم الحساب مطلوب لشركة ${company.name}`, 'error');
+                return;
+            }
+            
+            const settings = {
+                apiKey,
+                token,
+                accountNumber,
+                branchCode,
+                status,
+                apiUrl,
+                updatedAt: new Date().toISOString()
+            };
+            
+            // حفظ في localStorage
+            localStorage.setItem(`shipping_${companyId}`, JSON.stringify(settings));
+            
+            // تحديث عرض الشركات
+            loadShippingCompanies();
+            
+            showNotification(`تم حفظ إعدادات ${company.name} بنجاح`, 'success');
+        }
+
+        // ========== اختبار الاتصال بالشركة ==========
+        function testConnection() {
+            const companyId = document.getElementById('selectedCompanyId').value;
+            const company = algerianShippingCompanies.find(c => c.id === companyId);
+            
+            if (!company) return;
+            
+            const apiKey = document.getElementById('apiKey').value;
+            const token = document.getElementById('token').value;
+            
+            if (!apiKey || !token) {
+                showNotification('الرجاء إدخال API Key و Token أولاً', 'error');
+                return;
+            }
+            
+            // محاكاة اختبار الاتصال
+            Swal.fire({
+                title: 'جاري اختبار الاتصال...',
+                html: `التحقق من الاتصال بخوادم ${company.name}`,
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            // محاكاة تأخير الشبكة
+            setTimeout(() => {
+                // محاكاة نجاح عشوائي (90% نجاح)
+                const success = Math.random() < 0.9;
+                
+                if (success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '✅ اتصال ناجح',
+                        html: `
+                            <p>تم الاتصال بخوادم ${company.name} بنجاح</p>
+                            <p class="text-success">المفاتيح صالحة والخدمة جاهزة</p>
+                        `,
+                        confirmButtonText: 'حسناً'
+                    });
+                    
+                    // تحديث حالة الاتصال إلى نشط
+                    document.getElementById('connectionStatus').value = 'active';
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: '❌ فشل الاتصال',
+                        html: `
+                            <p>تعذر الاتصال بخوادم ${company.name}</p>
+                            <p class="text-danger">يرجى التحقق من المفاتيح وإعادة المحاولة</p>
+                        `,
+                        confirmButtonText: 'حسناً'
+                    });
+                }
+            }, 1500);
+        }
+
+        // ========== إدارة المنتجات ==========
+        function loadProducts() {
+            const tbody = document.getElementById('productsTable');
+            
+            db.collection("products").get().then((snapshot) => {
+                if (snapshot.empty) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center">لا توجد منتجات بعد</td></tr>';
+                    document.getElementById('totalProducts').textContent = '0';
+                    document.getElementById('productsBadge').textContent = '0';
+                    return;
+                }
+
+                let html = '';
+                snapshot.forEach((doc) => {
+                    const p = doc.data();
+                    html += `
+                        <tr>
+                            <td>
+                                <div class="product-image-thumb">
+                                    <img src="${p.imageUrl || 'https://via.placeholder.com/50'}" 
+                                         onerror="this.src='https://via.placeholder.com/50'">
+                                </div>
+                            </td>
+                            <td>${p.name}</td>
+                            <td>${p.price} د.ج</td>
+                            <td>${p.category}</td>
+                            <td>
+                                <button class="btn-success btn-sm" onclick="editProduct('${doc.id}')">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn-danger btn-sm" onclick="deleteProduct('${doc.id}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                tbody.innerHTML = html;
+                document.getElementById('totalProducts').textContent = snapshot.size;
+                document.getElementById('productsBadge').textContent = snapshot.size;
+            }).catch(error => {
+                console.error("خطأ:", error);
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">حدث خطأ في التحميل</td></tr>';
+            });
+        }
+
+        // ========== إدارة الطلبات ==========
+        function loadOrders() {
+            const ordersTable = document.getElementById('ordersTable');
+            const recentOrders = document.getElementById('recentOrders');
+            
+            db.collection("orders").orderBy("orderDate", "desc").get().then((snapshot) => {
+                let newCount = 0;
+                let allHtml = '';
+                let recentHtml = '';
+
+                snapshot.forEach((doc, index) => {
+                    const o = doc.data();
+                    if (o.status === 'جديد') newCount++;
+                    
+                    const date = new Date(o.orderDate).toLocaleDateString('ar-DZ');
+                    
+                    allHtml += `
+                        <tr>
+                            <td>${o.orderNumber || 'ORD-' + doc.id.slice(0,4)}</td>
+                            <td>${o.customerName}</td>
+                            <td>${o.productName}</td>
+                            <td>${o.productPrice} د.ج</td>
+                            <td>
+                                <span class="badge ${o.status === 'جديد' ? 'badge-warning' : 'badge-success'}">
+                                    ${o.status}
+                                </span>
+                            </td>
+                            <td>${date}</td>
+                            <td>
+                                <button class="btn-success btn-sm" onclick="updateOrderStatus('${doc.id}', 'مكتمل')">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+
+                    if (index < 5) {
+                        recentHtml += `
+                            <tr>
+                                <td>${o.orderNumber || 'ORD-' + doc.id.slice(0,4)}</td>
+                                <td>${o.customerName}</td>
+                                <td>${o.productName}</td>
+                                <td>${o.productPrice} د.ج</td>
+                                <td>
+                                    <span class="badge ${o.status === 'جديد' ? 'badge-warning' : 'badge-success'}">
+                                        ${o.status}
+                                    </span>
+                                </td>
+                            </tr>
+                        `;
+                    }
+                });
+
+                ordersTable.innerHTML = allHtml || '<tr><td colspan="7" class="text-center">لا توجد طلبات</td></tr>';
+                recentOrders.innerHTML = recentHtml || '<tr><td colspan="5" class="text-center">لا توجد طلبات</td></tr>';
+                
+                document.getElementById('newOrders').textContent = newCount;
+                document.getElementById('ordersBadge').textContent = newCount;
+            }).catch(error => {
+                console.error("خطأ:", error);
+                ordersTable.innerHTML = '<tr><td colspan="7" class="text-center text-danger">حدث خطأ في التحميل</td></tr>';
+                recentOrders.innerHTML = '<tr><td colspan="5" class="text-center text-danger">حدث خطأ</td></tr>';
+            });
+        }
+
+        function updateOrderStatus(id, status) {
+            db.collection("orders").doc(id).update({ status }).then(() => {
+                showNotification('تم تحديث حالة الطلب', 'success');
+                loadOrders();
+            }).catch(error => {
+                showNotification('حدث خطأ', 'error');
+            });
+        }
+
+        // ========== نماذج المنتجات ==========
+        function showProductForm() {
+            document.getElementById('productFormTitle').innerHTML = '<i class="fas fa-plus-circle text-success"></i> إضافة منتج جديد';
+            document.getElementById('productId').value = '';
+            document.getElementById('productName').value = '';
+            document.getElementById('productPrice').value = '';
+            document.getElementById('productCategory').value = 'ملابس';
+            document.getElementById('imagePreview').innerHTML = '';
+            document.getElementById('productFormCard').style.display = 'block';
+        }
+
+        function hideProductForm() {
+            document.getElementById('productFormCard').style.display = 'none';
+        }
+
+        function saveProduct() {
+            const id = document.getElementById('productId').value;
+            const name = document.getElementById('productName').value;
+            const price = document.getElementById('productPrice').value;
+            const category = document.getElementById('productCategory').value;
+            const imageFile = document.getElementById('productImage').files[0];
+
+            if (!name || !price) {
+                showNotification('يرجى ملء جميع الحقول', 'error');
+                return;
+            }
+
+            const productData = { 
+                name, 
+                price, 
+                category,
+                createdAt: new Date().toISOString()
+            };
+
+            if (imageFile) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    productData.imageUrl = e.target.result;
+                    saveToFirestore(productData, id);
+                };
+                reader.readAsDataURL(imageFile);
+            } else {
+                saveToFirestore(productData, id);
+            }
+        }
+
+        function saveToFirestore(productData, id) {
+            const promise = id ? 
+                db.collection("products").doc(id).update(productData) :
+                db.collection("products").add(productData);
+
+            promise.then(() => {
+                showNotification('تم حفظ المنتج بنجاح', 'success');
+                hideProductForm();
+                loadProducts();
+            }).catch(error => {
+                showNotification('حدث خطأ: ' + error.message, 'error');
+            });
+        }
+
+        function editProduct(id) {
+            db.collection("products").doc(id).get().then(doc => {
+                const p = doc.data();
+                document.getElementById('productFormTitle').innerHTML = '<i class="fas fa-edit text-warning"></i> تعديل المنتج';
+                document.getElementById('productId').value = id;
+                document.getElementById('productName').value = p.name;
+                document.getElementById('productPrice').value = p.price;
+                document.getElementById('productCategory').value = p.category;
+                if (p.imageUrl) {
+                    document.getElementById('imagePreview').innerHTML = `<img src="${p.imageUrl}">`;
+                }
+                document.getElementById('productFormCard').style.display = 'block';
+            });
+        }
+
+        function deleteProduct(id) {
+            Swal.fire({
+                title: 'تأكيد الحذف',
+                text: 'هل أنت متأكد من حذف هذا المنتج؟',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'نعم، احذف',
+                cancelButtonText: 'إلغاء',
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#64748b'
+            }).then(result => {
+                if (result.isConfirmed) {
+                    db.collection("products").doc(id).delete().then(() => {
+                        showNotification('تم حذف المنتج', 'success');
+                        loadProducts();
+                    }).catch(error => {
+                        showNotification('حدث خطأ', 'error');
+                    });
+                }
+            });
+        }
+
+        // ========== وظائف مساعدة ==========
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('show');
+        }
+
+        function previewStore() {
+            window.open('index.html', '_blank');
+        }
+
+        function showNotification(message, type = 'success') {
+            Swal.fire({
+                text: message,
+                icon: type,
+                toast: true,
+                position: 'top-start',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true
+            });
+        }
+
+        // معاينة الصورة
+        document.getElementById('productImage')?.addEventListener('change', function(e) {
+            const preview = document.getElementById('imagePreview');
+            preview.innerHTML = '';
+            if (e.target.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    preview.innerHTML = `<img src="${event.target.result}">`;
+                };
+                reader.readAsDataURL(e.target.files[0]);
+            }
+        });
+
+        // التحميل عند بدء التشغيل
+        window.onload = function() {
+            loadProducts();
+            loadOrders();
+            loadShippingCompanies();
+        };
+    </script>
+</body>
+</html>
