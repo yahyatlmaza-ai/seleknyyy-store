@@ -670,7 +670,15 @@ export function ReturnsTab() {
   };
 
   const setStatus = async (r: ApiReturn, status: ApiReturn['status']) => {
-    await returnsApi.update(r.id, { status });
+    // Backend PUT /returns/{id} validates against ReturnIn which has
+    // `order_id: int` as required (no default). A partial { status } body
+    // fails Pydantic validation with a 422 — re-send the unchanged fields.
+    await returnsApi.update(r.id, {
+      order_id: r.order_id,
+      reason: r.reason,
+      status,
+      notes: r.notes,
+    });
     refresh();
   };
 

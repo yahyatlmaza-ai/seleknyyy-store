@@ -361,8 +361,22 @@ def _get_owned(session: Session, tenant: Tenant, order_id: int) -> Order:
 
 
 def _gen_reference(session: Session, tenant: Tenant) -> str:
-    count = len(session.exec(select(Order).where(Order.tenant_id == tenant.id)).all())
-    return f"AF-{tenant.id}-{count + 1:04d}"
+    # Derive the next reference from the MAX existing numeric suffix rather
+    # than the current count, so deletions don't cause collisions.
+    # (counting + 1 could reuse a freed slot and yield a duplicate reference
+    # since `reference` has no DB unique constraint.)
+    existing = session.exec(
+        select(Order.reference).where(Order.tenant_id == tenant.id)
+    ).all()
+    prefix = f"AF-{tenant.id}-"
+    max_seq = 0
+    for ref in existing:
+        if not ref or not ref.startswith(prefix):
+            continue
+        tail = ref[len(prefix):]
+        if tail.isdigit():
+            max_seq = max(max_seq, int(tail))
+    return f"{prefix}{max_seq + 1:04d}"
 
 
 def _serialize(o: Order, customers: dict, agents: dict) -> dict:

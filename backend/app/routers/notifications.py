@@ -27,8 +27,10 @@ def list_notifications(
     rows = session.exec(
         select(Notification).where(Notification.tenant_id == tenant.id)
     ).all()
-    rows = list(reversed(rows))[:limit]
+    # Compute unread across ALL rows before slicing to `limit`; otherwise the
+    # bell badge silently caps at `limit` even when more unread rows exist.
     unread = len([n for n in rows if not n.read])
+    rows = list(reversed(rows))[:limit]
     return {
         "items": [
             {
