@@ -1,14 +1,24 @@
 """Team members + confirmation attempts archive."""
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, Field
 from sqlmodel import Session, select
 
 from ..database import get_session
-from ..deps import get_current_tenant, require_active_subscription
+from ..deps import get_current_tenant, get_current_user, require_active_subscription
 from ..errors import AppError
-from ..models import ConfirmationAttempt, Order, TeamMember, Tenant
+from ..models import (
+    ConfirmationAttempt,
+    Notification,
+    Order,
+    OrderStatusHistory,
+    TeamMember,
+    Tenant,
+    User,
+)
 
 router = APIRouter(prefix="/team", tags=["team"])
 
@@ -144,6 +154,7 @@ def list_confirmations(
 def record_confirmation(
     body: ConfirmationIn,
     tenant: Tenant = Depends(require_active_subscription),
+    user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> dict:
     order = session.get(Order, body.order_id)
@@ -159,10 +170,32 @@ def record_confirmation(
         note=body.note,
     )
     session.add(a)
-    # Auto-confirm the order if the attempt marks it so.
+    # Auto-confirm the order if the attempt marks it so. We mirror the side
+    # effects of orders._transition inline here (status history + notification
+    # + updated_at) so the timeline + notifications bell stay consistent with
+    # a manual confirmation. Using the helper directly would create a hard
+    # cross-router import cycle.
     if body.result == "confirmed" and order.status == "pending":
+        from_status = order.status
         order.status = "confirmed"
+        order.updated_at = datetime.now(timezone.utc)
         session.add(order)
+        session.add(OrderStatusHistory(
+            tenant_id=tenant.id,
+            order_id=order.id,
+            from_status=from_status,
+            to_status="confirmed",
+            changed_by_user_id=user.id,
+            note=body.note or "Auto-confirmed from confirmation call",
+        ))
+        session.add(Notification(
+            tenant_id=tenant.id,
+            user_id=user.id,
+            kind="order_status",
+            title=f"Order {order.reference}: {from_status} → confirmed",
+            body=body.note or "Auto-confirmed from confirmation call",
+            related_order_id=order.id,
+        ))
     session.commit()
     session.refresh(a)
     return _serialize_attempt(a)

@@ -844,7 +844,10 @@ export default function Dashboard() {
   const logout = () => { signOut(); navigate('/'); };
   const go = (k: Tab) => { setTab(k); setMobileNavOpen(false); };
 
-  const trialExpired = subscription?.plan === 'expired' || (subscription?.plan === 'trial' && subscription.days_left <= 0);
+  // Trust the backend's authoritative `active` flag: paid plans that
+  // expire keep their `plan` value (e.g. "professional") but flip
+  // `active` to false, so a plan-string check alone misses them.
+  const trialExpired = subscription != null && !subscription.active;
   const activeLabel = tr(lang, tabs.find(t => t.key === tab)?.i18nKey ?? 'tab_overview');
   const userInitial = (user?.name || user?.email || 'U').trim().charAt(0).toUpperCase();
 

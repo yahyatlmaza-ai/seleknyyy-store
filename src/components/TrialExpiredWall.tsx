@@ -49,7 +49,7 @@ export default function TrialExpiredWall({ onClose }: { onClose?: () => void }) 
   };
 
   const plans: Array<{ key: 'starter' | 'professional' | 'vip'; recommended?: boolean; duration: string }> = [
-    { key: 'starter', duration: '14 days' },
+    { key: 'starter', duration: '10 days' },
     { key: 'professional', recommended: true, duration: '180 days' },
     { key: 'vip', duration: '5.5 years' },
   ];
