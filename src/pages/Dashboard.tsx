@@ -5,7 +5,7 @@ import {
   Package, Users, Truck, BarChart3, Bell, LogOut, RefreshCw, Plus,
   CheckCircle, XCircle, Clock, Search, X, AlertCircle, Sun, Moon,
   Download, Send, Store, Globe, Box, Send as SendIcon, CornerDownLeft,
-  UserCog, Settings as SettingsIcon,
+  UserCog, Settings as SettingsIcon, Menu,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import Logo from '../components/Logo';
@@ -682,9 +682,14 @@ function NotificationsBell() {
 // ---------------------------------------------------------------------------
 
 export default function Dashboard() {
-  const { user, tenant, subscription, signOut, theme, setTheme } = useApp();
+  const { user, tenant, subscription, signOut, theme, setTheme, platformSettings } = useApp();
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('overview');
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  const platformName = platformSettings?.platform_name || 'auto Flow';
+  const [brandFirst, ...brandRest] = platformName.split(' ');
+  const brandSecond = brandRest.join(' ');
 
   const tabs: Array<{ key: Tab; label: string; icon: React.ComponentType<{ className?: string }> }> = useMemo(() => [
     { key: 'overview', label: 'Overview', icon: BarChart3 },
@@ -701,81 +706,132 @@ export default function Dashboard() {
   ], []);
 
   const logout = () => { signOut(); navigate('/'); };
+  const go = (k: Tab) => { setTab(k); setMobileNavOpen(false); };
 
   const trialExpired = subscription?.plan === 'expired' || (subscription?.plan === 'trial' && subscription.days_left <= 0);
+  const activeLabel = tabs.find(t => t.key === tab)?.label ?? 'Overview';
+  const userInitial = (user?.name || user?.email || 'U').trim().charAt(0).toUpperCase();
+
+  const Sidebar = (
+    <aside className="w-60 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col flex-shrink-0 h-full">
+      <div className="flex items-center gap-3 px-5 h-16 border-b border-gray-200 dark:border-gray-800">
+        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
+          <Package className="w-4 h-4 text-white" />
+        </div>
+        <span className="font-black text-gray-900 dark:text-white text-sm">
+          <span>{brandFirst}</span>{brandSecond && <> <span className="text-indigo-500">{brandSecond}</span></>}
+        </span>
+        <button
+          onClick={() => setMobileNavOpen(false)}
+          className="lg:hidden ml-auto p-1 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+          aria-label="Close navigation"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      {subscription?.plan === 'trial' && subscription.days_left > 0 && (
+        <div className="mx-3 mt-3 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-200/60 dark:border-indigo-800/40">
+          <div className="text-xs font-bold text-indigo-700 dark:text-indigo-300">Free trial</div>
+          <div className="text-[11px] text-indigo-500 mt-0.5">{subscription.days_left} days left</div>
+        </div>
+      )}
+
+      <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
+        {tabs.map(t => (
+          <button
+            key={t.key}
+            onClick={() => go(t.key)}
+            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+              tab === t.key
+                ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+            }`}
+          >
+            <t.icon className="w-5 h-5 flex-shrink-0" />
+            {t.label}
+          </button>
+        ))}
+      </nav>
+
+      <div className="p-3 border-t border-gray-200 dark:border-gray-800">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white font-bold text-sm">
+            {userInitial}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-bold text-gray-900 dark:text-white truncate">{user?.name || user?.email}</div>
+            <div className="text-xs text-gray-500 truncate">{tenant?.name}</div>
+          </div>
+          <button
+            onClick={logout}
+            title="Sign out"
+            aria-label="Sign out"
+            className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </aside>
+  );
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      <header className="sticky top-0 z-30 bg-white/90 dark:bg-gray-950/90 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-4">
-          <Logo size="sm" variant="full" clickable />
-          <div className="hidden md:flex items-center gap-1 ml-6">
-            {tabs.map(t => (
-              <button
-                key={t.key}
-                onClick={() => setTab(t.key)}
-                className={`px-3 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors ${
-                  tab === t.key
-                    ? 'bg-indigo-600 text-white'
-                    : 'text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800'
-                }`}
-              >
-                <t.icon className="w-4 h-4" /> {t.label}
-              </button>
-            ))}
-          </div>
-          <div className="ml-auto flex items-center gap-1">
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-950 overflow-hidden">
+      {/* Desktop sidebar */}
+      <div className="hidden lg:flex">{Sidebar}</div>
+
+      {/* Mobile sidebar drawer */}
+      {mobileNavOpen && (
+        <div className="lg:hidden fixed inset-0 z-40 flex">
+          <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setMobileNavOpen(false)} />
+          <div className="relative z-50 h-full">{Sidebar}</div>
+        </div>
+      )}
+
+      {/* Main pane */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <header className="flex items-center gap-3 px-4 sm:px-5 h-16 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
+          <button
+            onClick={() => setMobileNavOpen(true)}
+            className="lg:hidden p-2 rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+            aria-label="Open navigation"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <h1 className="text-base sm:text-lg font-black text-gray-900 dark:text-white flex-1 truncate">{activeLabel}</h1>
+          <div className="flex items-center gap-1 sm:gap-2">
             <NotificationsBell />
             <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="p-2 text-gray-500 hover:text-indigo-500 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800"
-              aria-label="toggle theme"
+              className="p-2 rounded-xl text-gray-500 hover:text-indigo-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+              aria-label="Toggle theme"
             >
               {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
-            <div className="hidden sm:block text-right mx-2">
-              <p className="text-sm font-bold text-gray-900 dark:text-white">{user?.name}</p>
-              <p className="text-xs text-gray-500">{tenant?.name}</p>
+            <div className="hidden sm:block text-right ml-2">
+              <p className="text-sm font-bold text-gray-900 dark:text-white leading-tight">{user?.name}</p>
+              <p className="text-xs text-gray-500 leading-tight">{tenant?.name}</p>
             </div>
-            <button
-              onClick={logout}
-              className="p-2 text-gray-500 hover:text-red-500 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800"
-              aria-label="Sign out"
-            >
-              <LogOut className="w-5 h-5" />
-            </button>
           </div>
-        </div>
-        <div className="md:hidden border-t border-gray-100 dark:border-gray-900 overflow-x-auto">
-          <div className="flex gap-1 px-3 py-2">
-            {tabs.map(t => (
-              <button
-                key={t.key}
-                onClick={() => setTab(t.key)}
-                className={`px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1 whitespace-nowrap ${
-                  tab === t.key ? 'bg-indigo-600 text-white' : 'text-gray-500'
-                }`}
-              >
-                <t.icon className="w-3.5 h-3.5" /> {t.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </header>
+        </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        {tab === 'overview' && <Overview />}
-        {tab === 'orders' && <OrdersTab />}
-        {tab === 'customers' && <CustomersTab />}
-        {tab === 'agents' && <AgentsTab />}
-        {tab === 'stores' && <StoresTab />}
-        {tab === 'carriers' && <CarriersTab />}
-        {tab === 'products' && <ProductsTab />}
-        {tab === 'shipments' && <ShipmentsTab />}
-        {tab === 'returns' && <ReturnsTab />}
-        {tab === 'team' && <TeamTab />}
-        {tab === 'settings' && <SettingsTab />}
-      </main>
+        <main className="flex-1 overflow-y-auto p-4 sm:p-5">
+          <div className="max-w-7xl mx-auto">
+            {tab === 'overview' && <Overview />}
+            {tab === 'orders' && <OrdersTab />}
+            {tab === 'customers' && <CustomersTab />}
+            {tab === 'agents' && <AgentsTab />}
+            {tab === 'stores' && <StoresTab />}
+            {tab === 'carriers' && <CarriersTab />}
+            {tab === 'products' && <ProductsTab />}
+            {tab === 'shipments' && <ShipmentsTab />}
+            {tab === 'returns' && <ReturnsTab />}
+            {tab === 'team' && <TeamTab />}
+            {tab === 'settings' && <SettingsTab />}
+          </div>
+        </main>
+      </div>
 
       {trialExpired && <TrialExpiredWall />}
     </div>
