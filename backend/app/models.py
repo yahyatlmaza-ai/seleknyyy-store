@@ -323,6 +323,104 @@ class TenantSettings(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=utcnow)
 
 
+# ---------------------------------------------------------------------------
+# Phase 5 Octomatic-parity modules: warehouses, call center scripts, fraud
+# blacklist, commissions, COD reconciliation.
+# ---------------------------------------------------------------------------
+
+
+class Warehouse(SQLModel, table=True):
+    """Physical warehouse/stock location. Multi-tenant."""
+    __tablename__ = "warehouses"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    tenant_id: int = Field(foreign_key="tenants.id", index=True)
+    name: str
+    location: str = ""  # free-form address
+    is_default: bool = Field(default=False)
+    active: bool = Field(default=True)
+    created_at: datetime = Field(default_factory=utcnow)
+
+
+class WarehouseStock(SQLModel, table=True):
+    """Per-(warehouse, product) on-hand quantity. Uniqueness is enforced in code."""
+    __tablename__ = "warehouse_stock"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    tenant_id: int = Field(foreign_key="tenants.id", index=True)
+    warehouse_id: int = Field(foreign_key="warehouses.id", index=True)
+    product_id: int = Field(foreign_key="products.id", index=True)
+    qty: int = Field(default=0)
+    updated_at: datetime = Field(default_factory=utcnow)
+
+
+class StockTransfer(SQLModel, table=True):
+    """Movement of product quantity between two warehouses."""
+    __tablename__ = "stock_transfers"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    tenant_id: int = Field(foreign_key="tenants.id", index=True)
+    from_warehouse_id: int = Field(foreign_key="warehouses.id")
+    to_warehouse_id: int = Field(foreign_key="warehouses.id")
+    product_id: int = Field(foreign_key="products.id")
+    qty: int = Field(default=1)
+    note: str = ""
+    created_at: datetime = Field(default_factory=utcnow)
+
+
+class CallScript(SQLModel, table=True):
+    """Reusable call-center confirmation script."""
+    __tablename__ = "call_scripts"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    tenant_id: int = Field(foreign_key="tenants.id", index=True)
+    name: str
+    body: str = ""
+    active: bool = Field(default=True)
+    created_at: datetime = Field(default_factory=utcnow)
+
+
+class PhoneBlacklist(SQLModel, table=True):
+    """Phone numbers blocked from creating new orders (per tenant)."""
+    __tablename__ = "phone_blacklist"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    tenant_id: int = Field(foreign_key="tenants.id", index=True)
+    phone: str = Field(index=True)
+    reason: str = ""
+    created_at: datetime = Field(default_factory=utcnow)
+
+
+class CommissionRule(SQLModel, table=True):
+    """Per-tenant default commission rates (delivery bonus + confirmation bonus)."""
+    __tablename__ = "commission_rules"
+    tenant_id: int = Field(primary_key=True, foreign_key="tenants.id")
+    delivered_bonus: float = Field(default=0.0)  # DZD per delivered order
+    confirmed_bonus: float = Field(default=0.0)  # DZD per confirmed order
+    updated_at: datetime = Field(default_factory=utcnow)
+
+
+class AgentCommissionOverride(SQLModel, table=True):
+    """Optional per-agent override of the tenant-wide commission rule."""
+    __tablename__ = "agent_commission_overrides"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    tenant_id: int = Field(foreign_key="tenants.id", index=True)
+    agent_id: int = Field(foreign_key="delivery_agents.id", index=True)
+    delivered_bonus: float = Field(default=0.0)
+    confirmed_bonus: float = Field(default=0.0)
+    updated_at: datetime = Field(default_factory=utcnow)
+
+
+class CODRecord(SQLModel, table=True):
+    """Daily cash-on-delivery reconciliation record for an agent."""
+    __tablename__ = "cod_records"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    tenant_id: int = Field(foreign_key="tenants.id", index=True)
+    agent_id: int = Field(foreign_key="delivery_agents.id", index=True)
+    date: str = Field(index=True)  # ISO YYYY-MM-DD (string keeps DB-portable)
+    amount_collected: float = Field(default=0.0)
+    amount_reconciled: float = Field(default=0.0)
+    reconciled: bool = Field(default=False)
+    notes: str = ""
+    created_at: datetime = Field(default_factory=utcnow)
+    updated_at: datetime = Field(default_factory=utcnow)
+
+
 # Static list of Algerian wilayas — used by Carriers / DeliveryRates UI.
 ALGERIAN_WILAYAS = [
     "Adrar", "Chlef", "Laghouat", "Oum El Bouaghi", "Batna", "Bejaia", "Biskra",

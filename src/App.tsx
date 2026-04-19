@@ -11,6 +11,7 @@ import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import Demo from './pages/Demo';
 import Admin from './pages/Admin';
+import { TermsPage, PrivacyPage } from './pages/LegalPages';
 
 function AppRoutes() {
   const { user } = useApp();
@@ -29,6 +30,8 @@ function AppRoutes() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/demo" element={<Demo />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/login" replace />} />
         <Route path="/admin" element={user ? <Admin /> : <Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />

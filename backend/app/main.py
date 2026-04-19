@@ -7,9 +7,13 @@ from .migrations import maybe_migrate_sqlite_to_target
 from .routers import (
     agents,
     auth,
+    callcenter,
     carriers,
+    cod,
+    commissions,
     customers,
     dashboard,
+    fraud,
     notifications,
     orders,
     products,
@@ -19,6 +23,7 @@ from .routers import (
     stores,
     subscriptions,
     team,
+    warehouses,
     webhooks,
 )
 
@@ -71,3 +76,9 @@ app.include_router(returns.router)
 app.include_router(team.router)
 app.include_router(settings_router.router)
 app.include_router(webhooks.router)
+# Phase 5A: Octomatic-parity extensions
+app.include_router(warehouses.router)
+app.include_router(callcenter.router)
+app.include_router(fraud.router)
+app.include_router(commissions.router)
+app.include_router(cod.router)

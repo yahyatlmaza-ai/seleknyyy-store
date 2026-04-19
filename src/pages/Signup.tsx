@@ -291,8 +291,8 @@ export default function Signup() {
 
           <p className="mt-6 text-center text-xs text-gray-500">
             By creating an account you agree to our{' '}
-            <a href="#" className="text-indigo-400 hover:underline">Terms</a> and{' '}
-            <a href="#" className="text-indigo-400 hover:underline">Privacy Policy</a>.
+            <a href="/terms" className="text-indigo-400 hover:underline">Terms</a> and{' '}
+            <a href="/privacy" className="text-indigo-400 hover:underline">Privacy Policy</a>.
           </p>
         </div>
       </div>

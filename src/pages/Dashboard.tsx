@@ -6,6 +6,7 @@ import {
   CheckCircle, XCircle, Clock, Search, X, AlertCircle, Sun, Moon,
   Download, Send, Store, Globe, Box, Send as SendIcon, CornerDownLeft,
   UserCog, Settings as SettingsIcon, Menu, History, Target, Languages,
+  Phone, ShieldAlert, Coins, Warehouse, Wallet,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { t as tr, type Language } from '../lib/i18n';
@@ -22,13 +23,15 @@ import {
 import { humanizeError } from '../lib/errorsI18n';
 import {
   StoresTab, CarriersTab, ProductsTab, ShipmentsTab, ReturnsTab,
-  TeamTab, SettingsTab,
+  TeamTab, SettingsTab, CallCenterTab, FraudTab, CommissionsTab,
+  WarehousesTab, CodTab,
 } from './tabs/OctomaticTabs';
 
 type Tab =
   | 'overview' | 'orders' | 'customers' | 'agents'
   | 'stores' | 'carriers' | 'products' | 'shipments'
-  | 'returns' | 'team' | 'settings';
+  | 'returns' | 'team' | 'settings'
+  | 'callcenter' | 'fraud' | 'commissions' | 'warehouses' | 'cod';
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
   pending: 'Pending', confirmed: 'Confirmed', shipped: 'Shipped',
@@ -830,13 +833,18 @@ export default function Dashboard() {
   const tabs: Array<{ key: Tab; i18nKey: string; icon: React.ComponentType<{ className?: string }> }> = useMemo(() => [
     { key: 'overview', i18nKey: 'tab_overview', icon: BarChart3 },
     { key: 'orders', i18nKey: 'tab_orders', icon: Package },
+    { key: 'callcenter', i18nKey: 'tab_callcenter', icon: Phone },
     { key: 'customers', i18nKey: 'tab_customers', icon: Users },
     { key: 'agents', i18nKey: 'tab_agents', icon: Truck },
     { key: 'stores', i18nKey: 'tab_stores', icon: Store },
     { key: 'carriers', i18nKey: 'tab_carriers', icon: Globe },
     { key: 'products', i18nKey: 'tab_products', icon: Box },
+    { key: 'warehouses', i18nKey: 'tab_warehouses', icon: Warehouse },
     { key: 'shipments', i18nKey: 'tab_shipments', icon: SendIcon },
     { key: 'returns', i18nKey: 'tab_returns', icon: CornerDownLeft },
+    { key: 'cod', i18nKey: 'tab_cod', icon: Wallet },
+    { key: 'commissions', i18nKey: 'tab_commissions', icon: Coins },
+    { key: 'fraud', i18nKey: 'tab_fraud', icon: ShieldAlert },
     { key: 'team', i18nKey: 'tab_team', icon: UserCog },
     { key: 'settings', i18nKey: 'tab_settings', icon: SettingsIcon },
   ], []);
@@ -967,6 +975,11 @@ export default function Dashboard() {
             {tab === 'products' && <ProductsTab />}
             {tab === 'shipments' && <ShipmentsTab />}
             {tab === 'returns' && <ReturnsTab />}
+            {tab === 'callcenter' && <CallCenterTab />}
+            {tab === 'warehouses' && <WarehousesTab />}
+            {tab === 'cod' && <CodTab />}
+            {tab === 'commissions' && <CommissionsTab />}
+            {tab === 'fraud' && <FraudTab />}
             {tab === 'team' && <TeamTab />}
             {tab === 'settings' && <SettingsTab />}
           </div>

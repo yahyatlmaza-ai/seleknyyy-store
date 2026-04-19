@@ -549,6 +549,253 @@ export const settingsApi = {
     api<ApiTenantSettings>('/settings', { method: 'PUT', body }),
 };
 
+// ---------------------------------------------------------------------------
+// Phase 5A Octomatic-parity resources: warehouses, callcenter, fraud,
+// commissions, COD reconciliation.
+// ---------------------------------------------------------------------------
+
+export interface ApiWarehouse {
+  id: number;
+  name: string;
+  location: string;
+  is_default: boolean;
+  active: boolean;
+  created_at: string | null;
+}
+
+export interface ApiWarehouseStock {
+  id: number;
+  warehouse_id: number;
+  product_id: number;
+  product_name: string;
+  qty: number;
+  updated_at: string | null;
+}
+
+export interface ApiStockTransfer {
+  id: number;
+  from_warehouse_id: number;
+  to_warehouse_id: number;
+  product_id: number;
+  qty: number;
+  note: string;
+  created_at: string | null;
+}
+
+export interface ApiCallScript {
+  id: number;
+  name: string;
+  body: string;
+  active: boolean;
+  created_at: string | null;
+}
+
+export interface ApiCallQueueItem {
+  order_id: number;
+  reference: string;
+  product_name: string;
+  quantity: number;
+  price: number;
+  currency: string;
+  customer_name: string;
+  customer_phone: string;
+  created_at: string | null;
+}
+
+export interface ApiBlacklistEntry {
+  id: number;
+  phone: string;
+  reason: string;
+  created_at: string | null;
+}
+
+export interface ApiFraudScore {
+  phone: string;
+  score: number;
+  blacklisted: boolean;
+  total_orders: number;
+  cancelled_orders: number;
+  returns: number;
+}
+
+export interface ApiCommissionRule {
+  tenant_id: number;
+  delivered_bonus: number;
+  confirmed_bonus: number;
+  updated_at: string | null;
+}
+
+export interface ApiCommissionOverride {
+  id: number;
+  agent_id: number;
+  delivered_bonus: number;
+  confirmed_bonus: number;
+}
+
+export interface ApiCommissionPayoutRow {
+  agent_id: number;
+  agent_name: string;
+  delivered: number;
+  confirmed: number;
+  delivered_bonus: number;
+  confirmed_bonus: number;
+  amount: number;
+}
+
+export interface ApiCommissionPayoutResponse {
+  start: string;
+  end: string;
+  total: number;
+  rows: ApiCommissionPayoutRow[];
+}
+
+export interface ApiCODRecord {
+  id: number;
+  agent_id: number;
+  agent_name: string;
+  date: string;
+  amount_collected: number;
+  amount_reconciled: number;
+  reconciled: boolean;
+  notes: string;
+  updated_at: string | null;
+}
+
+export const warehousesApi = {
+  list: () => api<ApiWarehouse[]>('/warehouses'),
+  create: (body: Partial<ApiWarehouse>) => api<ApiWarehouse>('/warehouses', { method: 'POST', body }),
+  update: (id: number, body: Partial<ApiWarehouse>) =>
+    api<ApiWarehouse>(`/warehouses/${id}`, { method: 'PUT', body }),
+  remove: (id: number) => api<void>(`/warehouses/${id}`, { method: 'DELETE' }),
+  stock: (id: number) => api<ApiWarehouseStock[]>(`/warehouses/${id}/stock`),
+  setStock: (id: number, body: { product_id: number; qty: number }) =>
+    api<ApiWarehouseStock>(`/warehouses/${id}/stock`, { method: 'POST', body }),
+  transfer: (body: {
+    from_warehouse_id: number;
+    to_warehouse_id: number;
+    product_id: number;
+    qty: number;
+    note?: string;
+  }) => api<ApiStockTransfer>('/warehouses/transfer', { method: 'POST', body }),
+  transfers: () => api<ApiStockTransfer[]>('/warehouses/transfers'),
+};
+
+export const callcenterApi = {
+  scripts: () => api<ApiCallScript[]>('/callcenter/scripts'),
+  createScript: (body: Partial<ApiCallScript>) =>
+    api<ApiCallScript>('/callcenter/scripts', { method: 'POST', body }),
+  updateScript: (id: number, body: Partial<ApiCallScript>) =>
+    api<ApiCallScript>(`/callcenter/scripts/${id}`, { method: 'PUT', body }),
+  removeScript: (id: number) => api<void>(`/callcenter/scripts/${id}`, { method: 'DELETE' }),
+  queue: () => api<ApiCallQueueItem[]>('/callcenter/queue'),
+  log: (body: {
+    order_id: number;
+    result: 'no_answer' | 'confirmed' | 'rejected' | 'callback' | 'wrong_number';
+    note?: string;
+  }) => api<ApiConfirmationAttempt>('/callcenter/log', { method: 'POST', body }),
+  history: (order_id?: number) =>
+    api<ApiConfirmationAttempt[]>(
+      `/callcenter/log${order_id ? `?order_id=${order_id}` : ''}`,
+    ),
+};
+
+export const fraudApi = {
+  blacklist: () => api<ApiBlacklistEntry[]>('/fraud/blacklist'),
+  addBlacklist: (body: { phone: string; reason?: string }) =>
+    api<ApiBlacklistEntry>('/fraud/blacklist', { method: 'POST', body }),
+  removeBlacklist: (id: number) => api<void>(`/fraud/blacklist/${id}`, { method: 'DELETE' }),
+  score: (phone: string) => api<ApiFraudScore>(`/fraud/score/${encodeURIComponent(phone)}`),
+};
+
+export const commissionsApi = {
+  rule: () => api<ApiCommissionRule>('/commissions/rule'),
+  setRule: (body: { delivered_bonus: number; confirmed_bonus: number }) =>
+    api<ApiCommissionRule>('/commissions/rule', { method: 'PUT', body }),
+  overrides: () => api<ApiCommissionOverride[]>('/commissions/overrides'),
+  upsertOverride: (body: { agent_id: number; delivered_bonus: number; confirmed_bonus: number }) =>
+    api<ApiCommissionOverride>('/commissions/overrides', { method: 'POST', body }),
+  payouts: (start?: string, end?: string) => {
+    const q = new URLSearchParams();
+    if (start) q.set('start', start);
+    if (end) q.set('end', end);
+    const qs = q.toString();
+    return api<ApiCommissionPayoutResponse>(`/commissions/payouts${qs ? `?${qs}` : ''}`);
+  },
+  pdfUrl: (agent_id: number, start?: string, end?: string) => {
+    const q = new URLSearchParams();
+    if (start) q.set('start', start);
+    if (end) q.set('end', end);
+    const qs = q.toString();
+    return `${API_URL}/commissions/export/${agent_id}.pdf${qs ? `?${qs}` : ''}`;
+  },
+  downloadPdf: async (agent_id: number, start?: string, end?: string): Promise<void> => {
+    const token = getToken();
+    const q = new URLSearchParams();
+    if (start) q.set('start', start);
+    if (end) q.set('end', end);
+    const qs = q.toString();
+    const resp = await fetch(
+      `${API_URL}/commissions/export/${agent_id}.pdf${qs ? `?${qs}` : ''}`,
+      { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+    );
+    if (!resp.ok) {
+      throw new ApiError(`HTTP_${resp.status}`, `HTTP ${resp.status}`, {}, resp.status);
+    }
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `commission-${agent_id}-${start || 'all'}-${end || 'all'}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  },
+};
+
+export const codApi = {
+  list: (params: { start?: string; end?: string; agent_id?: number } = {}) => {
+    const q = new URLSearchParams();
+    if (params.start) q.set('start', params.start);
+    if (params.end) q.set('end', params.end);
+    if (params.agent_id !== undefined) q.set('agent_id', String(params.agent_id));
+    const qs = q.toString();
+    return api<ApiCODRecord[]>(`/cod${qs ? `?${qs}` : ''}`);
+  },
+  upsert: (body: {
+    agent_id: number;
+    date: string;
+    amount_collected: number;
+    amount_reconciled?: number;
+    reconciled?: boolean;
+    notes?: string;
+  }) => api<ApiCODRecord>('/cod', { method: 'POST', body }),
+  reconcile: (id: number) => api<ApiCODRecord>(`/cod/${id}/reconcile`, { method: 'PUT' }),
+  downloadCsv: async (params: { start?: string; end?: string } = {}): Promise<void> => {
+    const token = getToken();
+    const q = new URLSearchParams();
+    if (params.start) q.set('start', params.start);
+    if (params.end) q.set('end', params.end);
+    const qs = q.toString();
+    const resp = await fetch(
+      `${API_URL}/cod/export.csv${qs ? `?${qs}` : ''}`,
+      { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+    );
+    if (!resp.ok) {
+      throw new ApiError(`HTTP_${resp.status}`, `HTTP ${resp.status}`, {}, resp.status);
+    }
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `cod-${params.start || 'all'}-${params.end || 'all'}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  },
+};
+
 export const webhooksApi = {
   events: () => api<{ events: string[] }>('/webhooks/events'),
   list: () => api<ApiWebhook[]>('/webhooks'),
