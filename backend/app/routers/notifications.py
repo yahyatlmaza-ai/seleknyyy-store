@@ -25,11 +25,15 @@ def list_notifications(
     limit: int = 50,
 ) -> dict:
     rows = session.exec(
-        select(Notification).where(Notification.tenant_id == tenant.id)
+        select(Notification)
+        .where(Notification.tenant_id == tenant.id)
+        .order_by(Notification.created_at.asc())  # type: ignore[attr-defined]
     ).all()
     # Compute unread across ALL rows before slicing to `limit`; otherwise the
     # bell badge silently caps at `limit` even when more unread rows exist.
     unread = len([n for n in rows if not n.read])
+    # Return newest-first within the slice (explicit ORDER BY needed for Postgres;
+    # without it results are arbitrary and reversing preserves arbitrariness).
     rows = list(reversed(rows))[:limit]
     return {
         "items": [

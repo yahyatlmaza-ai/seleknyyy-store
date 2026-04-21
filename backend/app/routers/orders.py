@@ -129,8 +129,18 @@ def update_order(
     session: Session = Depends(get_session),
 ) -> dict:
     order = _get_owned(session, tenant, order_id)
-    _validate_refs(session, tenant, body.customer_id, body.agent_id)
-    for k, v in body.model_dump().items():
+    # Use exclude_unset so a partial PUT (e.g. {"product_name": "x"}) only
+    # touches the fields the client actually sent, instead of silently clearing
+    # omitted optionals back to their Pydantic defaults (customer_id -> None,
+    # price -> 0.0, etc).
+    provided = body.model_dump(exclude_unset=True)
+    _validate_refs(
+        session,
+        tenant,
+        provided.get("customer_id") if "customer_id" in provided else order.customer_id,
+        provided.get("agent_id") if "agent_id" in provided else order.agent_id,
+    )
+    for k, v in provided.items():
         # Don't let PUT change status — use the dedicated status endpoint.
         if k in ("status",):
             continue
